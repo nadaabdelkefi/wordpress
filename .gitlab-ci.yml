@@ -1,0 +1,26 @@
+image: docker:stable
+services:
+  - docker:dind
+
+variables:
+  DOCKER_DRIVER: overlay
+
+stages:
+  - package
+
+docker-package:
+  stage: package
+  only:
+    - tags
+    - develop
+    - /^release/.*$/
+    - /^hotfix/.*$/
+  before_script:
+    - echo "$CI_JOB_TOKEN" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  after_script:
+    - docker logout "$CI_REGISTRY"
+  script:
+    - IMAGE_NAME="$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
+    - docker build --pull -t "$IMAGE_NAME" -f Dockerfile .
+    - docker push "$IMAGE_NAME"
+
